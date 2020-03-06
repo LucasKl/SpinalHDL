@@ -1145,6 +1145,10 @@ end
 
   def refImpl(e: BaseType): String = emitReference(e, true)
 
+  def operatorImplAsSvFormalOperator(verilog: String)(e: SvFormalOperator): String = {
+    s"(${emitExpression(e.left)} $verilog ${emitExpression(e.right)})"
+  }
+
   def operatorImplAsBinaryOperator(verilog: String)(e: BinaryOperator): String = {
     s"(${emitExpression(e.left)} $verilog ${emitExpression(e.right)})"
   }
@@ -1161,6 +1165,10 @@ end
 
   def operatorImplAsUnaryOperator(verilog: String)(e: UnaryOperator): String = {
     s"($verilog ${emitExpression(e.source)})"
+  }
+
+  def operatorImplAsPostFixUnaryOperator(verilog: String)(e: UnaryOperator): String = {
+    s"(${emitExpression(e.source)} $verilog)"
   }
 
   def operatorImplAsMux(e: BinaryMultiplexer): String = {
@@ -1261,6 +1269,21 @@ end
   def emitEnumPoison(e: EnumPoison): String = {
     val width = e.encoding.getWidth(e.enum)
     s"(${width}'b${"x" * width})"
+  }
+
+  def emitDelay(e: (Int, Int)): String = {
+    e match {
+      case (n, 0) => s"##${n}"
+      case (n, m) => s"##[${n}:${m}]"
+    }
+  }
+
+  def emitRepeat(e: (Int, Int)): String = {
+    e match {
+      case (n, -1) => s"[*${n}:$$]"
+      case (n, 0) => s"[*${n}]"
+      case (n, m) => s"[*${n}:${m}]"
+    }
   }
 
   def accessBoolFixed(e: BitVectorBitAccessFixed): String = {
@@ -1365,6 +1388,9 @@ end
     case  e: Operator.Bool.And                        => operatorImplAsBinaryOperator("&&")(e)
     case  e: Operator.Bool.Or                         => operatorImplAsBinaryOperator("||")(e)
     case  e: Operator.Bool.Xor                        => operatorImplAsBinaryOperator("^")(e)
+    // formal bool
+    case  e: Operator.Bool.FImplicate                  => operatorImplAsBinaryOperator("|->")(e)
+    case  e: Operator.Bool.FNonOverlapImplicate        => operatorImplAsBinaryOperator("|=>")(e)
 
     //enum
     case  e: Operator.Enum.Equal                      => enumEgualsImpl(true)(e)
@@ -1403,6 +1429,8 @@ end
     case e : Operator.Formal.Changed                  => s"!$$stable(${emitExpression(e.source)})"
     case e : Operator.Formal.Stable                   => s"$$stable(${emitExpression(e.source)})"
     case e : Operator.Formal.InitState                => s"$$initstate()"
+    case e : Operator.Formal.Delay                    => operatorImplAsBinaryOperator(emitDelay(e.delay))(e)
+    case e : Operator.Formal.Repeat                   => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times))(e)
   }
 
   elaborate()
