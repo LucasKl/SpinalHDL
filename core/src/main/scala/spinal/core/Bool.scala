@@ -268,50 +268,62 @@ class Bool extends BaseType with DataPrimitives[Bool] with BitwiseOp[Bool]{
   * @example{{{ assert(a |-> b) }}}
   * @return a Bool assign with the AND result
   */
-  def |->(b: Bool): Bool = wrapLogicalOperator(b, new Operator.Bool.FImplicate)
+  def -->(b: Bool): Bool = wrapLogicalOperator(b, new Operator.Bool.FImplicate)
 
   /**
   * Logical Non Overlap Implicate
   * @example{{{ assert(a |=> b) }}}
   * @return a Bool assign with the AND result
   */
-  def |=>(b: Bool): Bool = wrapLogicalOperator(b, new Operator.Bool.FNonOverlapImplicate)
+  def ==>(b: Bool): Bool = wrapLogicalOperator(b, new Operator.Bool.FNonOverlapImplicate)
+
+  /**
+  * Repeated evaluation of right hand expression
+  * @example{{{ a |*| }}}
+  * @example{{{ a |*4| }}}
+  * @example{{{ a |*(4,5)| }}}
+  * @example{{{ a |*(4,$)| }}}
+  * @example{{{ a |*(4,$)| b }}}
+  * @return a Bool assign with the expression repeated
+  */
+  def |*(): IntermediateBoolUnary = new IntermediateBoolUnary(new Operator.Formal.RepeatBool((1, 0)))
+  def |*(d: Int): IntermediateBoolUnary = new IntermediateBoolUnary(new Operator.Formal.RepeatBool((d, 0)))
+  def |*(d: (_, _)): IntermediateBoolUnary = d match {
+    case (a: Int, b: UnboundedMax) => new IntermediateBoolUnary(new Operator.Formal.RepeatBool((a, -1)))
+    case (a: Int, b: Int) => new IntermediateBoolUnary(new Operator.Formal.RepeatBool((a, b)))
+    case _ => throw new IllegalArgumentException("Valid args to |* (Int, Int) and (Int, UnboundedMax).")
+  } 
+
+  /**
+  * Goto evaluation of right hand expression
+  * @example{{{ a |*| }}}
+  * @example{{{ a |*4| }}}
+  * @example{{{ a |*(4,5)| }}}
+  * @example{{{ a |*(4,$)| }}}
+  * @example{{{ a |*(4,$)| b }}}
+  * @return a Bool assign with the expression a repeated
+  */
+  def |->(d: Int): IntermediateBoolUnary = new IntermediateBoolUnary(new Operator.Formal.GotoBool((d, 0)))
+  def |->(d: (_, _)): IntermediateBoolUnary = d match {
+    case (a: Int, b: UnboundedMax) => new IntermediateBoolUnary(new Operator.Formal.GotoBool((a, -1)))
+    case (a: Int, b: Int) => new IntermediateBoolUnary(new Operator.Formal.GotoBool((a, b)))
+    case _ => throw new IllegalArgumentException("Valid args to |-> (Int, Int) and (Int, UnboundedMax).")
+  } 
 
   /**
   * Delayed evaluation of right hand expression
-  * @example{{{ a ### b }}}
-  * @return a Bool assign with
+  * @example{{{ a |#n| b }}}
+  * @return a Bool assign with b delayed by range [n:m] cycles
   */
-  def ###(b: Bool): Bool = wrapLogicalOperator(b, new Operator.Formal.DelayBool((1, 0)))
-  def ###(v: Int, b: Bool): Bool = wrapLogicalOperator(b, new Operator.Formal.DelayBool((v, 0)))
-  def ###(v: (Int, Int), b: Bool): Bool = wrapLogicalOperator(b, new Operator.Formal.DelayBool(v))
+  def |#(a: Int): IntermediateBoolLogical = new IntermediateBoolLogical(this, new Operator.Formal.DelayBool((a, 0)))
 
-  /**
-  * Repeated evaluation of right hand expression, 1 cycle
-  * @example{{{ a * }}}
-  * @return a Bool assign with the expression a delayed by 1 cycle
-  */
-  def *(): Bool = wrapUnaryOperator(new Operator.Formal.RepeatBool((1, 0)))
+  class IntermediateBoolUnary(op: UnaryOperator) {
+    def |(): Bool = wrapUnaryOperator(op)
+    def |(b: Bool): Bool = wrapUnaryOperator(op).wrapLogicalOperator(b, new Operator.Formal.None)
+  }
 
-  /**
-  * Repeated evaluation of right hand expression, d cycle
-  * @example{{{ a * d}}}
-  * @return a Bool assign with the expression a delayed by d cycle
-  */
-  def *(d: Int): Bool = wrapUnaryOperator(new Operator.Formal.RepeatBool((d, 0)))
-
-  /**
-  * Delayed evaluation of right hand expression, cycle range
-  * @example{{{ a * (1, 5)}}}
-  * @example{{{ a * (1, '$')}}}
-  * @return a Bool assign with the expression a delayed by a range
-  */
-  def *(d: (_, _)): Bool = d match {
-    case (a: Int, b: Char) => b match {
-      case '$' => wrapUnaryOperator(new Operator.Formal.RepeatBool((a, -1)))
-      case _   => throw new IllegalArgumentException("Only $ permitted.")
-    }
-    case (a: Int, b: Int) => wrapUnaryOperator(new Operator.Formal.RepeatBool((a, b)))
+  class IntermediateBoolLogical(a: Bool, op: BinaryOperator) {
+    def |(b: Bool): Bool = a.wrapLogicalOperator(b, op)
   }
 }
 

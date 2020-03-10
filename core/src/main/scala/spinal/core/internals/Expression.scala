@@ -315,6 +315,7 @@ object Operator {
     abstract class Past(val delay : Int) extends UnaryOperator
     abstract class Delay(val delay : (Int, Int)) extends BinaryOperator
     abstract class Repeat(val times : (Int, Int)) extends UnaryOperator
+    abstract class Goto(val times : (Int, Int)) extends UnaryOperator
 
     class PastBool(delay : Int) extends Past(delay) {
       override def getTypeObject = TypeBool
@@ -392,6 +393,16 @@ object Operator {
     class RepeatBool(times : (Int, Int)) extends Repeat(times) {
       override def getTypeObject = TypeBool
       override def opName: String = "Bool [*...] Bool"
+    }
+
+    class GotoBool(times : (Int, Int)) extends Goto(times) {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool [->...] Bool"
+    }
+
+    class None() extends BinaryOperator {
+      override def getTypeObject = TypeBool
+      override def opName: String = " "
     }
   }
 

@@ -1278,11 +1278,11 @@ end
     }
   }
 
-  def emitRepeat(e: (Int, Int)): String = {
+  def emitRepeat(e: (Int, Int), op: String): String = {
     e match {
-      case (n, -1) => s"[*${n}:$$]"
-      case (n, 0) => s"[*${n}]"
-      case (n, m) => s"[*${n}:${m}]"
+      case (n, -1) => s"[${op}${n}:$$]"
+      case (n, 0) => s"[${op}${n}]"
+      case (n, m) => s"[${op}${n}:${m}]"
     }
   }
 
@@ -1430,7 +1430,9 @@ end
     case e : Operator.Formal.Stable                   => s"$$stable(${emitExpression(e.source)})"
     case e : Operator.Formal.InitState                => s"$$initstate()"
     case e : Operator.Formal.Delay                    => operatorImplAsBinaryOperator(emitDelay(e.delay))(e)
-    case e : Operator.Formal.Repeat                   => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times))(e)
+    case e : Operator.Formal.Repeat                   => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times, "*"))(e)
+    case e : Operator.Formal.Goto                     => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times, "->"))(e)
+    case e : Operator.Formal.None                     => operatorImplAsBinaryOperator("")(e)
   }
 
   elaborate()
