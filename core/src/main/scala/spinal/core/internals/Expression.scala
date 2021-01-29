@@ -223,6 +223,31 @@ abstract class BinaryOperator extends Operator {
   }
 }
 
+abstract class SvFormalOperator extends Operator {
+  type T <: Expression
+
+  var left, right: T = null.asInstanceOf[T]
+  var args: T = null.asInstanceOf[T]
+
+  def foreachExpression(func: (Expression) => Unit): Unit = {
+    func(left)
+    func(right)
+  }
+
+  override def remapExpressions(func: (Expression) => Expression): Unit = {
+    left = stabilized(func, left).asInstanceOf[T]
+    right = stabilized(func, right).asInstanceOf[T]
+  }
+
+  override def toStringMultiLine() = {
+    s"""$this
+       |- Left  operand : $left
+       |- Right operand : $right
+       |- Args operands : $args
+       |""".stripMargin
+  }
+}
+
 
 abstract class BinaryOperatorWidthableInputs extends BinaryOperator {
   override type T = Expression with WidthProvider
@@ -288,6 +313,10 @@ object InferWidth
 object Operator {
   object Formal{
     abstract class Past(val delay : Int) extends UnaryOperator
+    abstract class Delay(val delay : (Int, Int)) extends BinaryOperator
+    abstract class Repeat(val times : (Int, Int)) extends UnaryOperator
+    abstract class NonconsecutiveRepeat(val times : (Int, Int)) extends UnaryOperator
+    abstract class Goto(val times : (Int, Int)) extends UnaryOperator
 
     class PastBool(delay : Int) extends Past(delay) {
       override def getTypeObject = TypeBool
@@ -356,6 +385,31 @@ object Operator {
       override def getTypeObject = TypeBool
       override def opName: String = "$initstate(...)"
     }
+
+    class DelayBool(delay : (Int, Int)) extends Delay(delay) {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool ##... Bool"
+    }
+
+    class RepeatBool(times : (Int, Int)) extends Repeat(times) {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool [*...] Bool"
+    }
+
+    class GotoBool(times : (Int, Int)) extends Goto(times) {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool [->...] Bool"
+    }
+
+    class NonconsecutiveRepeatBool(times : (Int, Int)) extends NonconsecutiveRepeat(times) {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool [=...] Bool"
+    }
+
+    class None() extends BinaryOperator {
+      override def getTypeObject = TypeBool
+      override def opName: String = " "
+    }
   }
 
   /**
@@ -391,6 +445,16 @@ object Operator {
     class NotEqual extends BinaryOperator {
       override def getTypeObject = TypeBool
       override def opName: String = "Bool =/= Bool"
+    }
+
+    class FImplicate extends BinaryOperator {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool |-> Bool"
+    }
+
+    class FNonOverlapImplicate extends BinaryOperator {
+      override def getTypeObject = TypeBool
+      override def opName: String = "Bool |=> Bool"
     }
   }
 
@@ -2250,6 +2314,13 @@ abstract class BitVectorLiteral() extends Literal with WidthProvider {
     }
 
     makeIt(isSignedKind && value < 0)
+  }
+
+  def hexString(bitCount: Int, aligin: Boolean = false):String = {
+    val hexCount = scala.math.ceil(bitCount/4.0).toInt
+    val alignCount = if (aligin) (hexCount * 4) else bitCount
+    val unsignedValue = if(value >= 0) value else ((BigInt(1) << alignCount) + value)
+    if(value == 0) "0" else s"%${hexCount}s".format(unsignedValue.toString(16)).replace(' ','0')
   }
 
 

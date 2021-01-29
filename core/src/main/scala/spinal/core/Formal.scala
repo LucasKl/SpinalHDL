@@ -2,6 +2,10 @@ package spinal.core
 
 import spinal.core.internals.Operator
 
+class UnboundedMax {
+  
+}
+
 object Formal {
   def past[T <: Data](that : T, delay : Int) : T = that.formalPast(delay)
   def past[T <: Data](that : T) : T = past(that, 1)
@@ -16,5 +20,7 @@ object Formal {
     ret
   }
 
+  def $(): UnboundedMax = new UnboundedMax
+  
 //  def enabled[T](block : => T) : T = GenerationFlags.formal(block)
 }
