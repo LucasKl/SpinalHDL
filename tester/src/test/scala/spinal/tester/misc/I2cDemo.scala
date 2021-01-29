@@ -59,7 +59,7 @@ object I2cDemo extends App{
     apb.write(tHigh, 250)
     apb.write(tBuf, 1000)
 
-
+    print("##################################################################")
 
     apb.write(txData, txValid | txEnable | 0x0C) //Preset the address with 0x0C
     apb.write(txAck, txValid | txEnable) //NACK

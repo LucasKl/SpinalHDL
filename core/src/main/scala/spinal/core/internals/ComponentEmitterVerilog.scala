@@ -1431,6 +1431,7 @@ end
     case e : Operator.Formal.InitState                => s"$$initstate()"
     case e : Operator.Formal.Delay                    => operatorImplAsBinaryOperator(emitDelay(e.delay))(e)
     case e : Operator.Formal.Repeat                   => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times, "*"))(e)
+    case e : Operator.Formal.NonconsecutiveRepeat     => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times, "="))(e)
     case e : Operator.Formal.Goto                     => operatorImplAsPostFixUnaryOperator(emitRepeat(e.times, "->"))(e)
     case e : Operator.Formal.None                     => operatorImplAsBinaryOperator("")(e)
   }
